@@ -1,0 +1,228 @@
+<!--
+  ═══════════════════════════════════════════════════════════════
+  THEME TOGGLE SNIPPET — Animated Sun/Moon Toggle
+  ═══════════════════════════════════════════════════════════════
+  Drop this into any HTML page for a beautiful animated light/dark
+  theme toggle. Works with CSS custom properties via [data-theme].
+
+  WHAT TO CUSTOMIZE (search for 🔧 PLACEHOLDER):
+    1. localStorage key — change 'theme' to your own key
+    2. Default theme    — 'dark' or 'light'
+    3. Colors           — the sun/moon icon + border glow colors
+
+  HOW IT WORKS:
+    - Toggles <html data-theme="dark|light">
+    - Persists choice in localStorage
+    - Sun icon animates to moon (and vice versa)
+    - Glow effect on hover
+
+  USAGE:
+    1. Drop the CSS + HTML + JS into your page
+    2. Define your light/dark CSS variables using [data-theme]
+    3. Done!
+
+  ORIGIN: Extracted from jeantobin.com (Eternal Harmony, 2026)
+  LICENSE: Free to reuse — built by Eternal Harmony AI
+  ═══════════════════════════════════════════════════════════════
+-->
+
+<!-- ===== CSS (add to your <style> or stylesheet) ===== -->
+<style>
+/* 🔧 PLACEHOLDER: Define your light/dark CSS variables */
+:root {
+  --color-bg: #FAF8F5;
+  --color-text: #2A2A2A;
+  --color-primary: #2A9D8F;
+  --color-accent: #F2B731;
+  /* ... your other variables */
+}
+
+[data-theme="dark"] {
+  --color-bg: #0E1B1A;
+  --color-text: #ECE7DC;
+  --color-primary: #6FE0D0;
+  --color-accent: #F2B731;
+  /* ... your dark overrides */
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color .4s ease, color .4s ease;
+}
+
+/* === Theme Toggle Button === */
+.theme-toggle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent);
+  position: relative;
+  padding: 0;
+  outline: none;
+  transition: border-color 0.3s ease,
+              box-shadow 0.4s ease,
+              transform 0.3s ease,
+              background-color 0.3s ease;
+  /* 🔧 PLACEHOLDER: Adjust glow color to match your accent */
+  box-shadow:
+    0 0 0 1px rgba(242, 183, 49, 0.20),
+    0 0 14px rgba(242, 183, 49, 0.32);
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  transform: rotate(-12deg);
+  border-color: var(--color-accent);
+  box-shadow:
+    0 0 0 1px rgba(242, 183, 49, 0.35),
+    0 0 18px rgba(242, 183, 49, 0.45),
+    0 0 32px rgba(42, 157, 143, 0.25);
+}
+
+/* Dark-mode glow */
+[data-theme="dark"] .theme-toggle {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow:
+    0 0 0 1px rgba(111, 224, 208, 0.25),
+    0 0 16px rgba(111, 224, 208, 0.40);
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+  border-color: #9CECDF;
+  box-shadow:
+    0 0 0 1px rgba(156, 236, 223, 0.50),
+    0 0 24px rgba(156, 236, 223, 0.55),
+    0 0 38px rgba(242, 183, 49, 0.20);
+}
+
+/* Icon container */
+.theme-toggle svg {
+  width: 22px;
+  height: 22px;
+  transition: opacity 0.35s ease,
+              transform 0.5s ease;
+  position: absolute;
+}
+
+/* Sun is visible in light mode, hidden in dark */
+.theme-toggle .icon-sun {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+[data-theme="dark"] .theme-toggle .icon-sun {
+  opacity: 0;
+  transform: scale(0.5) rotate(90deg);
+}
+
+/* Moon is hidden in light mode, visible in dark */
+.theme-toggle .icon-moon {
+  opacity: 0;
+  transform: scale(0.5) rotate(-90deg);
+}
+
+[data-theme="dark"] .theme-toggle .icon-moon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+</style>
+
+
+<!-- ===== HTML (place where you want the toggle) ===== -->
+<button
+  type="button"
+  class="theme-toggle"
+  id="themeToggle"
+  aria-label="Toggle light and dark mode"
+  aria-pressed="false"
+  title="Toggle light / dark mode"
+>
+  <!-- Sun icon -->
+  <svg class="icon-sun" viewBox="0 0 24 24" fill="none"
+       stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round"
+       aria-hidden="true">
+    <circle cx="12" cy="12" r="4.5"></circle>
+    <line x1="12" y1="2" x2="12" y2="4.5"></line>
+    <line x1="12" y1="19.5" x2="12" y2="22"></line>
+    <line x1="2" y1="12" x2="4.5" y2="12"></line>
+    <line x1="19.5" y1="12" x2="22" y2="12"></line>
+    <line x1="4.93" y1="4.93" x2="6.7" y2="6.7"></line>
+    <line x1="17.3" y1="17.3" x2="19.07" y2="19.07"></line>
+    <line x1="4.93" y1="19.07" x2="6.7" y2="17.3"></line>
+    <line x1="17.3" y1="6.7" x2="19.07" y2="4.93"></line>
+  </svg>
+
+  <!-- Moon icon -->
+  <svg class="icon-moon" viewBox="0 0 24 24" fill="none"
+       stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round"
+       aria-hidden="true">
+    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+  </svg>
+</button>
+
+
+<!-- ===== JS (add before </body>) ===== -->
+<script>
+(function() {
+  var html = document.documentElement;
+  var btn  = document.getElementById('themeToggle');
+
+  // 🔧 PLACEHOLDER: Change localStorage key and default theme
+  var STORAGE_KEY = 'theme';
+  var DEFAULT     = 'dark';
+
+  // Restore saved theme (runs before paint if inlined in <head>)
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) html.setAttribute('data-theme', saved);
+    else html.setAttribute('data-theme', DEFAULT);
+  } catch(e) { /* localStorage unavailable */ }
+
+  if (!btn) return; // No toggle on this page — skip
+
+  btn.addEventListener('click', function() {
+    var current = html.getAttribute('data-theme');
+    var next    = current === 'dark' ? 'light' : 'dark';
+
+    html.setAttribute('data-theme', next);
+    btn.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
+
+    try { localStorage.setItem(STORAGE_KEY, next); } catch(e) {}
+  });
+
+  // Set initial aria-pressed
+  btn.setAttribute('aria-pressed',
+    html.getAttribute('data-theme') === 'dark' ? 'true' : 'false');
+})();
+</script>
+
+<!--
+  ═══════════════════════════════════════════════════════════
+  PRO TIP: Flash prevention
+
+  To prevent a flash of the wrong theme on page load, add this
+  inline <script> in your <head> BEFORE any CSS that depends on
+  [data-theme]:
+
+  <script>
+    (function(){
+      try {
+        var t = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch(e) {}
+    })();
+  </script>
+
+  This runs synchronously before the first paint.
+  ═══════════════════════════════════════════════════════════
+-->

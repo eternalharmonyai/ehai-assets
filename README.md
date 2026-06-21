@@ -17,6 +17,18 @@ Each shell is a single `.html` file with all CSS and JavaScript inline. No build
 |--------|-------------|
 | [stats-tracker](workers/stats-tracker/) | Cloudflare Worker for event tracking, stats API, smart insights, auth, and contact form. Uses D1 + KV. |
 
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| [brand-assets.py](scripts/brand-assets.py) | Python script that generates favicons (5 sizes), multi-res .ico, and OG social banner from a single logo image. Requires Pillow. |
+
+## Snippets
+
+| Snippet | Description |
+|---------|-------------|
+| [theme-toggle.html](snippets/theme-toggle.html) | Animated sun/moon light-dark toggle. Drop-in CSS + HTML + JS with localStorage persistence. |
+
 ## Usage
 
 1. Copy the file(s) into your project
