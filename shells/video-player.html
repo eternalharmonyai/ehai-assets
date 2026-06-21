@@ -1,0 +1,669 @@
+<!doctype html>
+<!--
+  ═══════════════════════════════════════════════════════════════
+  REUSABLE CHAPTER-BASED VIDEO PLAYER SHELL
+  ═══════════════════════════════════════════════════════════════
+  Drop-in video player with chapter navigation, theater mode,
+  auto-advance, share links, and light/dark theme. All CSS + JS inline.
+
+  WHAT TO CUSTOMIZE (search for 🔧 PLACEHOLDER):
+    1. CHAPTERS array       — your video chapters (file, title, desc)
+    2. MEDIA_BASE           — where your video files live
+    3. poster image         — the thumbnail shown before playback
+    4. Branding             — page title, description, nav links
+    5. Color palette        — CSS variables in :root
+    6. Analytics tracking   — optional track.js integration
+
+  FEATURES:
+    - Chapter list sidebar with active highlight
+    - Auto-advance to next chapter on video end
+    - Theater mode (lightbox) for distraction-free viewing
+    - Share button copies chapter-specific URL to clipboard
+    - Prev/Next chapter navigation
+    - URL hash linking (#chapter-3, #full)
+    - Light/dark theme toggle (persists in localStorage)
+    - Responsive layout (sidebar stacks below on mobile)
+
+  HOW CHAPTERS WORK:
+    Each chapter is a separate video file played in the same <video> element.
+    Define your chapters array below. Each entry:
+      { file: '01_Intro.mp4', title: 'Introduction', desc: '...' }
+    Optional full-talk entry (plays all chapters as one file):
+      { file: '00_Full.mp4', title: 'Watch Complete', desc: '...', isFull: true }
+
+  ORIGIN: Extracted from jeantobin.com video library (Eternal Harmony, 2026)
+  LICENSE: Free to reuse — built by Eternal Harmony AI
+  ═══════════════════════════════════════════════════════════════
+-->
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🔧 Video Library — 🔧 Your Site Name</title>
+<!-- 🔧 PLACEHOLDER: Replace Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Montserrat:wght@400;500;600&display=swap">
+<style>
+  /* ═══════════════════════════════════════════════════════════
+     CSS VARIABLES — 🔧 PLACEHOLDER: Customize your brand colors
+     ═══════════════════════════════════════════════════════════ */
+  :root {
+    --color-cream:#FAF8F5; --color-warm-white:#FFFFFF; --color-bg-alt:#F4F1EC;
+    --color-teal:#2A9D8F; --color-teal-dark:#238278; --color-teal-deep:#1B7A70;
+    --color-gold:#F2B731; --color-gold-hover:#E0A620;
+    --color-navy:#2C3E50;
+    --color-text:#2A2A2A; --color-text-light:#5A5A5A; --color-text-muted:#888888;
+    --color-border:#E8E4DE;
+    --font-serif:'Cormorant Garamond','Georgia',serif;
+    --font-sans:'Montserrat','Helvetica Neue',Arial,sans-serif;
+    --shadow:0 4px 20px rgba(31,42,38,.06), 0 1px 3px rgba(31,42,38,.04);
+    --shadow-lg:0 12px 48px rgba(31,42,38,.10), 0 2px 6px rgba(31,42,38,.04);
+  }
+  [data-theme="dark"] {
+    --color-cream:#0E1B1A; --color-warm-white:#142625; --color-bg-alt:#0A1716;
+    --color-text:#ECE7DC; --color-text-light:#C5CFCC; --color-text-muted:#8E9C99;
+    --color-border:#1F3431;
+    --color-teal-deep:#6FE0D0; --color-teal-dark:#4DC9B8; --color-teal:#58D6C4;
+    --color-navy:#ECE7DC;
+    --shadow:0 4px 20px rgba(0,0,0,.4), 0 1px 3px rgba(0,0,0,.25);
+    --shadow-lg:0 12px 48px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.3);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    font-family: var(--font-sans); font-size: 15px; line-height: 1.6;
+    color: var(--color-text); background: var(--color-cream);
+    transition: background-color .4s ease, color .4s ease;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     NAVIGATION — 🔧 PLACEHOLDER: Replace nav links
+     ═══════════════════════════════════════════════════════════ */
+  nav {
+    padding: 14px 28px; background: var(--color-warm-white);
+    border-bottom: 1px solid var(--color-border);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+  .nav-brand { font-family: var(--font-serif); font-size: 22px; font-weight: 500; color: var(--color-teal-deep); text-decoration: none; }
+  .nav-links { display: flex; gap: 6px; flex-wrap: wrap; list-style: none; align-items: center; }
+  .nav-links a {
+    text-decoration: none; font-size: 12px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--color-text-light); padding: 8px 14px;
+    border-radius: 6px; transition: all .2s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--color-teal-deep); }
+  .nav-links a.active { border-bottom: 2px solid var(--color-teal-deep); border-radius: 0; }
+
+  /* Theme toggle */
+  .theme-toggle {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--color-warm-white); border: 1px solid var(--color-gold);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--color-gold); position: relative; padding: 0; outline: none;
+    transition: border-color 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 0 0 1px rgba(242, 183, 49, 0.20), 0 0 14px rgba(242, 183, 49, 0.32);
+  }
+  .theme-toggle:hover { transform: rotate(-12deg); }
+  .theme-toggle svg { width: 20px; height: 20px; transition: opacity 0.35s ease, transform 0.5s ease; position: absolute; }
+  .theme-toggle .icon-sun  { opacity: 1; transform: scale(1); }
+  .theme-toggle .icon-moon { opacity: 0; transform: scale(0.5) rotate(-90deg); }
+  [data-theme="dark"] .theme-toggle .icon-sun  { opacity: 0; transform: scale(0.5) rotate(90deg); }
+  [data-theme="dark"] .theme-toggle .icon-moon { opacity: 1; transform: scale(1); }
+  [data-theme="dark"] .theme-toggle {
+    border-color: var(--color-teal-deep); color: var(--color-teal-deep);
+    box-shadow: 0 0 0 1px rgba(111,224,208,0.25), 0 0 16px rgba(111,224,208,0.40);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     HERO — 🔧 PLACEHOLDER: Replace title + description
+     ═══════════════════════════════════════════════════════════ */
+  .page-hero {
+    text-align: center; padding: 48px 20px 32px;
+    max-width: 700px; margin: 0 auto;
+  }
+  .page-hero .eyebrow {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--color-gold); margin-bottom: 8px; font-weight: 600;
+  }
+  .page-hero h1 {
+    font-family: var(--font-serif); font-size: 38px; font-weight: 500;
+    color: var(--color-teal-deep); margin-bottom: 12px;
+  }
+  .page-hero p {
+    font-size: 15px; color: var(--color-text-light); font-family: var(--font-serif); font-style: italic;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     MAIN LAYOUT — Player + Chapter sidebar
+     ═══════════════════════════════════════════════════════════ */
+  .library-container {
+    display: grid; grid-template-columns: 1fr 320px; gap: 24px;
+    max-width: 1200px; margin: 0 auto 48px; padding: 0 28px; align-items: start;
+  }
+
+  /* ─── Video Player ─── */
+  .player-area { min-width: 0; }
+  .player-frame {
+    position: relative; background: #000; border-radius: 12px; overflow: hidden;
+    box-shadow: var(--shadow-lg); aspect-ratio: 16/9;
+  }
+  .player-frame video {
+    width: 100%; height: 100%; display: block; object-fit: contain;
+  }
+  .player-expand {
+    position: absolute; top: 12px; right: 12px; z-index: 10;
+    width: 36px; height: 36px; border-radius: 8px; background: rgba(0,0,0,.55);
+    border: 1px solid rgba(255,255,255,.25); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; backdrop-filter: blur(4px);
+  }
+  .player-expand:hover { background: rgba(0,0,0,.75); border-color: rgba(255,255,255,.5); }
+
+  /* ─── Now Playing card ─── */
+  .now-playing {
+    margin-top: 16px; padding: 20px;
+    background: var(--color-warm-white); border: 1px solid var(--color-border);
+    border-radius: 12px; box-shadow: var(--shadow);
+  }
+  .now-playing .np-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--color-text-muted); margin-bottom: 4px; }
+  .now-playing h2 { font-family: var(--font-serif); font-size: 20px; font-weight: 500; color: var(--color-teal-deep); margin-bottom: 6px; }
+  .now-playing .np-desc { font-size: 13px; color: var(--color-text-light); line-height: 1.5; }
+
+  /* ─── Player controls bar ─── */
+  .player-controls {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px; flex-wrap: wrap; gap: 12px;
+  }
+  /* Auto-advance toggle */
+  .autoplay-toggle {
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    font-size: 12px; color: var(--color-text-light); user-select: none;
+  }
+  .autoplay-toggle input { display: none; }
+  .autoplay-track {
+    width: 40px; height: 22px; border-radius: 11px;
+    background: var(--color-bg-alt); border: 1px solid var(--color-border);
+    position: relative; transition: background .2s;
+  }
+  .autoplay-thumb {
+    position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--color-text-muted); transition: all .2s;
+  }
+  .autoplay-toggle input:checked + .autoplay-track {
+    background: var(--color-teal-deep); border-color: var(--color-teal-deep);
+  }
+  .autoplay-toggle input:checked + .autoplay-track .autoplay-thumb {
+    left: 20px; background: #fff;
+  }
+  [data-theme="dark"] .autoplay-toggle input:checked + .autoplay-track .autoplay-thumb { background: #0E1B1A; }
+
+  /* ─── Nav buttons (Prev / Share / Next) ─── */
+  .btn-chapter {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+    font-size: 12px; font-weight: 500; font-family: var(--font-sans);
+    color: var(--color-text-light); background: var(--color-warm-white);
+    border: 1px solid var(--color-border); border-radius: 20px;
+    cursor: pointer; transition: all .2s;
+  }
+  .btn-chapter:hover:not(:disabled) { color: var(--color-teal-deep); border-color: var(--color-teal-deep); }
+  .btn-chapter:disabled { opacity: 0.4; cursor: default; }
+  .btn-chapter svg { width: 16px; height: 16px; }
+
+  /* ═══════════════════════════════════════════════════════════
+     CHAPTER SIDEBAR
+     ═══════════════════════════════════════════════════════════ */
+  .chapter-sidebar { min-width: 0; }
+  .chapter-sidebar h3 {
+    font-family: var(--font-serif); font-size: 18px; font-weight: 500;
+    color: var(--color-teal-deep); margin-bottom: 4px;
+  }
+  .chapter-sidebar .sidebar-sub {
+    font-size: 12px; color: var(--color-text-muted); margin-bottom: 14px;
+  }
+  .chapter-list {
+    list-style: none; display: flex; flex-direction: column; gap: 6px;
+    max-height: 580px; overflow-y: auto; padding-right: 8px;
+  }
+  .chapter-item {
+    display: flex; align-items: flex-start; gap: 12px; width: 100%; text-align: left;
+    background: var(--color-warm-white); border: 1px solid var(--color-border);
+    border-radius: 10px; padding: 12px 14px; cursor: pointer;
+    font-family: var(--font-sans); color: var(--color-text); transition: all .2s;
+  }
+  .chapter-item:hover { border-color: var(--color-teal); }
+  .chapter-item.is-active {
+    border-color: var(--color-teal-deep); background: var(--color-teal-deep);
+  }
+  .chapter-item.is-active, .chapter-item.is-active .chapter-title,
+  .chapter-item.is-active .chapter-meta { color: var(--color-warm-white); }
+  [data-theme="dark"] .chapter-item.is-active,
+  [data-theme="dark"] .chapter-item.is-active .chapter-title,
+  [data-theme="dark"] .chapter-item.is-active .chapter-meta { color: #0E1B1A; }
+  .chapter-num {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--color-bg-alt); display: grid; place-items: center;
+    font-size: 13px; font-weight: 600; color: var(--color-text-light);
+  }
+  .chapter-item.is-active .chapter-num { background: rgba(255,255,255,.25); color: inherit; }
+  .chapter-info { min-width: 0; }
+  .chapter-title { font-size: 13px; font-weight: 500; color: var(--color-text); display: block; }
+  .chapter-meta { font-size: 11px; color: var(--color-text-muted); margin-top: 2px; display: block; }
+
+  /* Full-talk button variant */
+  .chapter-item.full-talk { border: 1px solid var(--color-gold); }
+
+  /* ═══════════════════════════════════════════════════════════
+     THEATER MODE (Lightbox)
+     ═══════════════════════════════════════════════════════════ */
+  .lightbox {
+    position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 1000;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox-close {
+    position: absolute; top: 16px; right: 16px; z-index: 10;
+    width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.12);
+    border: none; color: #fff; cursor: pointer; display: grid; place-items: center;
+    transition: background .2s;
+  }
+  .lightbox-close:hover { background: rgba(255,255,255,.25); }
+  .lightbox-close svg { width: 20px; height: 20px; }
+  .lightbox-stage { width: 100%; max-width: 1100px; aspect-ratio: 16/9; }
+  .lightbox-stage video { width: 100%; height: 100%; border-radius: 8px; }
+
+  /* ═══════════════════════════════════════════════════════════
+     SHARE TOAST
+     ═══════════════════════════════════════════════════════════ */
+  .share-toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: var(--color-teal-deep); color: var(--color-warm-white);
+    padding: 10px 24px; border-radius: 24px; font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow-lg); z-index: 2000; opacity: 0;
+    pointer-events: none; transition: opacity .3s ease;
+  }
+  [data-theme="dark"] .share-toast { color: #0E1B1A; }
+  .share-toast.show { opacity: 1; }
+
+  /* ═══════════════════════════════════════════════════════════
+     RESPONSIVE
+     ═══════════════════════════════════════════════════════════ */
+  @media (max-width: 860px) {
+    .library-container {
+      grid-template-columns: 1fr; padding: 0 16px;
+    }
+    .chapter-list { max-height: none; flex-direction: row; flex-wrap: wrap; overflow-y: visible; }
+    .chapter-item { flex: 1 1 240px; }
+    .page-hero h1 { font-size: 28px; }
+    nav { padding: 12px 16px; }
+  }
+  @media (max-width: 480px) {
+    .player-controls { flex-direction: column; align-items: flex-start; }
+    .chapter-item { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NAVIGATION — 🔧 PLACEHOLDER: Replace with your site nav
+     ═══════════════════════════════════════════════════════════ -->
+<nav aria-label="Main navigation">
+  <a href="🔧 index.html" class="nav-brand">🔧 Your Site</a>
+  <ul class="nav-links">
+    <!-- 🔧 PLACEHOLDER: Add your navigation links -->
+    <li><a href="🔧 about.html">About</a></li>
+    <li><a href="🔧 videos.html" class="active">Video Library</a></li>
+    <li><a href="🔧 contact.html">Contact</a></li>
+  </ul>
+  <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle light and dark mode">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4.5"></circle>
+      <line x1="12" y1="2" x2="12" y2="4.5"></line><line x1="12" y1="19.5" x2="12" y2="22"></line>
+      <line x1="2" y1="12" x2="4.5" y2="12"></line><line x1="19.5" y1="12" x2="22" y2="12"></line>
+      <line x1="4.93" y1="4.93" x2="6.7" y2="6.7"></line><line x1="17.3" y1="17.3" x2="19.07" y2="19.07"></line>
+      <line x1="4.93" y1="19.07" x2="6.7" y2="17.3"></line><line x1="17.3" y1="6.7" x2="19.07" y2="4.93"></line>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path>
+    </svg>
+  </button>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO — 🔧 PLACEHOLDER: Replace with your title
+     ═══════════════════════════════════════════════════════════ -->
+<header class="page-hero">
+  <p class="eyebrow">🔧 COMPLETE PRESENTATION</p>
+  <h1>🔧 Your Video Library</h1>
+  <p>🔧 Your description — organized into inviting chapters. Begin anywhere; each segment stands beautifully on its own.</p>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN — Player + Chapter List
+     ═══════════════════════════════════════════════════════════ -->
+<main class="library-container" id="library">
+
+  <!-- Player Area -->
+  <div class="player-area">
+    <div class="player-frame" id="playerFrame">
+      <video
+        id="mainPlayer"
+        class="video-el"
+        controls
+        controlsList="nodownload noremoteplayback"
+        disablePictureInPicture
+        preload="metadata"
+        playsinline
+        oncontextmenu="return false;"
+        poster="🔧 YOUR_POSTER.jpg"
+        aria-label="🔧 Video player">
+        Your browser does not support the video tag.
+      </video>
+      <button type="button" class="player-expand" id="playerExpand" aria-label="Expand to theater view" title="Theater view">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 9V3h6"></path><path d="M21 9V3h-6"></path>
+          <path d="M3 15v6h6"></path><path d="M21 15v6h-6"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Now Playing -->
+    <div class="now-playing">
+      <p class="np-eyebrow">Now Playing — Chapter <span id="nowChapterNum">1</span></p>
+      <h2 id="nowChapterTitle">🔧 Chapter Title</h2>
+      <p class="np-desc" id="nowChapterDesc">🔧 Chapter description appears here.</p>
+
+      <div class="player-controls">
+        <label class="autoplay-toggle">
+          <input type="checkbox" id="autoAdvance" checked>
+          <span class="autoplay-track" aria-hidden="true"><span class="autoplay-thumb"></span></span>
+          <span class="autoplay-label">Auto-play next chapter</span>
+        </label>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn-chapter" id="prevChapter" aria-label="Previous chapter" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Previous</span>
+          </button>
+          <button type="button" class="btn-chapter" id="shareChapter" aria-label="Share this chapter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+            </svg>
+            <span>Share</span>
+          </button>
+          <button type="button" class="btn-chapter" id="nextChapter" aria-label="Next chapter">
+            <span>Next</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chapter Sidebar -->
+  <aside class="chapter-sidebar" aria-label="Chapter list">
+    <h3>Chapters</h3>
+    <p class="sidebar-sub">🔧 N segments · ~XX min total</p>
+    <ol class="chapter-list" id="chapterList" role="list">
+      <!-- Chapters injected by JS below -->
+    </ol>
+  </aside>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════
+     THEATER MODE LIGHTBOX
+     ═══════════════════════════════════════════════════════════ -->
+<div class="lightbox" id="playerLightbox" role="dialog" aria-modal="true" aria-label="Theater view" hidden>
+  <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Close theater view (Esc)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
+  <div class="lightbox-stage" id="lightboxStage">
+    <!-- Player is moved here when theater mode is active -->
+  </div>
+</div>
+
+<!-- Share toast -->
+<div class="share-toast" id="shareToast" role="status" aria-live="polite" hidden>Link copied to clipboard</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT — Chapter engine
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  /* ─── 🔧 PLACEHOLDER: Where your video files live ─── */
+  var MEDIA_BASE = '🔧 https://media.yoursite.com';
+
+  /* ─── 🔧 PLACEHOLDER: Define your chapters ───
+     Each chapter: { file, title, desc, isFull? }
+     - file:    filename in MEDIA_BASE
+     - title:   display title
+     - desc:    short description for the Now Playing card
+     - isFull:  (optional) marks a "full presentation" entry
+  */
+  var chapters = [
+    {
+      file: '🔧 00_Full_Presentation.mp4',
+      title: '🔧 Watch the Complete Presentation',
+      desc: '🔧 The entire presentation in one continuous video.',
+      isFull: true
+    },
+    {
+      file: '🔧 01_Introduction.mp4',
+      title: '🔧 Introduction',
+      desc: '🔧 Opening remarks and overview.'
+    },
+    {
+      file: '🔧 02_Topic_Two.mp4',
+      title: '🔧 Topic Two',
+      desc: '🔧 Description of the second chapter.'
+    },
+    {
+      file: '🔧 03_Topic_Three.mp4',
+      title: '🔧 Topic Three',
+      desc: '🔧 Description of the third chapter.'
+    }
+    /* 🔧 PLACEHOLDER: Add more chapters here */
+  ];
+
+  /* ─── DOM refs ─── */
+  var mainPlayer   = document.getElementById('mainPlayer');
+  var listEl       = document.getElementById('chapterList');
+  var nowNum       = document.getElementById('nowChapterNum');
+  var nowTitle     = document.getElementById('nowChapterTitle');
+  var nowDesc      = document.getElementById('nowChapterDesc');
+  var prevBtn      = document.getElementById('prevChapter');
+  var nextBtn      = document.getElementById('nextChapter');
+  var shareBtn     = document.getElementById('shareChapter');
+  var shareToast   = document.getElementById('shareToast');
+  var autoAdvance  = document.getElementById('autoAdvance');
+  var lightbox     = document.getElementById('playerLightbox');
+  var lightboxStage = document.getElementById('lightboxStage');
+  var playerFrame  = document.getElementById('playerFrame');
+
+  var currentIndex = 0;
+
+  /* ─── Build chapter list ─── */
+  chapters.forEach(function(ch, i) {
+    if (ch.isFull && i > 0) return;
+    var numText = ch.isFull ? '\u25B6' : String(i);
+    var metaText = ch.isFull
+      ? 'All-in-One Presentation'
+      : ('Chapter ' + i + ' of ' + (chapters.length - 1));
+
+    var li = document.createElement('li');
+    li.setAttribute('role', 'listitem');
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chapter-item' + (ch.isFull ? ' full-talk' : '');
+    btn.setAttribute('data-index', String(i));
+    btn.innerHTML =
+      '<span class="chapter-num" aria-hidden="true">' + numText + '</span>' +
+      '<span class="chapter-info">' +
+        '<span class="chapter-title">' + esc(ch.title) + '</span>' +
+        '<span class="chapter-meta">' + esc(metaText) + '</span>' +
+      '</span>';
+    btn.addEventListener('click', function() { loadChapter(i, true); });
+    li.appendChild(btn);
+    listEl.appendChild(li);
+  });
+
+  /* ─── Load a chapter ─── */
+  function loadChapter(index, autoplay) {
+    if (index < 0 || index >= chapters.length) return;
+    currentIndex = index;
+    var ch = chapters[index];
+
+    mainPlayer.src = MEDIA_BASE + '/' + ch.file;
+    mainPlayer.load();
+    if (autoplay) {
+      var p = mainPlayer.play();
+      if (p && typeof p.catch === 'function') p.catch(function() { /* user gesture needed */ });
+    }
+
+    /* Update Now Playing */
+    if (ch.isFull) {
+      nowNum.innerHTML = 'Full &mdash; &nbsp;';
+    } else {
+      nowNum.textContent = String(index);
+    }
+    nowTitle.innerHTML = ch.title;
+    nowDesc.textContent = ch.desc;
+
+    /* Update active highlight */
+    var items = listEl.querySelectorAll('.chapter-item');
+    items.forEach(function(el, i) {
+      el.classList.toggle('is-active', i === index);
+    });
+
+    /* Scroll active into view */
+    var activeItem = items[index];
+    if (activeItem && activeItem.scrollIntoView) {
+      activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    /* Prev/Next disabled state */
+    prevBtn.disabled = (index === 0);
+    nextBtn.disabled = (index === chapters.length - 1);
+
+    /* Update URL hash for shareable links */
+    try {
+      var hashVal = ch.isFull ? '#full' : '#chapter-' + index;
+      history.replaceState(null, '', hashVal);
+    } catch(e) {}
+
+    /* 🔧 PLACEHOLDER: Optional analytics tracking
+    if (typeof track === 'function') {
+      track('video_play', { chapter: index, title: ch.title });
+    }
+    */
+  }
+
+  /* ─── Auto-advance on video end ─── */
+  mainPlayer.addEventListener('ended', function() {
+    if (autoAdvance.checked && currentIndex < chapters.length - 1) {
+      loadChapter(currentIndex + 1, true);
+    }
+  });
+
+  /* ─── Prev / Next buttons ─── */
+  prevBtn.addEventListener('click', function() { loadChapter(currentIndex - 1, true); });
+  nextBtn.addEventListener('click', function() { loadChapter(currentIndex + 1, true); });
+
+  /* ─── Share button ─── */
+  shareBtn.addEventListener('click', function() {
+    var ch = chapters[currentIndex];
+    var hashVal = ch.isFull ? '#full' : '#chapter-' + currentIndex;
+    var url = window.location.origin + window.location.pathname + hashVal;
+    navigator.clipboard.writeText(url).then(function() {
+      shareToast.hidden = false;
+      shareToast.classList.add('show');
+      setTimeout(function() {
+        shareToast.classList.remove('show');
+        setTimeout(function() { shareToast.hidden = true; }, 300);
+      }, 2000);
+    }).catch(function() {
+      /* fallback: show the URL */
+      prompt('Copy this link:', url);
+    });
+  });
+
+  /* ═══════════════════════════════════════════════════════════
+     THEATER MODE
+     ═══════════════════════════════════════════════════════════ */
+  document.getElementById('playerExpand').addEventListener('click', function() {
+    lightboxStage.appendChild(playerFrame);
+    lightbox.hidden = false;
+    lightbox.classList.add('open');
+    /* Re-trigger any needed layout */
+    mainPlayer.style.width = '100%';
+    mainPlayer.style.height = '100%';
+  });
+
+  document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', function(e) {
+    if (e.target === lightbox) closeLightbox();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && lightbox.classList.contains('open')) closeLightbox();
+  });
+
+  function closeLightbox() {
+    var container = document.querySelector('.player-area');
+    container.insertBefore(playerFrame, container.firstChild);
+    lightbox.classList.remove('open');
+    lightbox.hidden = true;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     THEME TOGGLE
+     ═══════════════════════════════════════════════════════════ */
+  (function() {
+    var html = document.documentElement;
+    try {
+      var saved = localStorage.getItem('video-theme');
+      if (saved) html.setAttribute('data-theme', saved);
+    } catch(e) {}
+    document.getElementById('themeToggle').addEventListener('click', function() {
+      var current = html.getAttribute('data-theme');
+      var next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      try { localStorage.setItem('video-theme', next); } catch(e) {}
+    });
+  })();
+
+  /* ─── Load chapter from URL hash on init ─── */
+  function loadFromHash() {
+    var hash = window.location.hash;
+    if (!hash) { loadChapter(0, false); return; }
+    if (hash === '#full') { loadChapter(0, false); return; }
+    var match = hash.match(/^#chapter-(\d+)$/);
+    if (match) {
+      var idx = parseInt(match[1], 10);
+      /* account for full-talk chapter at index 0 */
+      if (chapters[0] && chapters[0].isFull && idx >= 0) idx = idx + 1;
+      loadChapter(Math.min(idx, chapters.length - 1), false);
+    } else {
+      loadChapter(0, false);
+    }
+  }
+
+  /* ─── Utility ─── */
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ─── Start! ─── */
+  loadFromHash();
+
+})();
+</script>
+</body>
+</html>
