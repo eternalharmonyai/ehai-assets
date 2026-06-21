@@ -1,0 +1,34 @@
+# Cloudflare Worker: Stats Tracker
+# 🔧 PLACEHOLDER: Replace with your project name
+name = "🔧 your-stats-worker"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+# 🔧 PLACEHOLDER: Replace with your Cloudflare account_id
+# account_id = "YOUR_ACCOUNT_ID"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "🔧 your-stats-db"
+database_id = "🔧 YOUR_D1_DATABASE_ID"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "🔧 YOUR_KV_NAMESPACE_ID"
+
+[observability]
+enabled = true
+
+[triggers]
+crons = ["0 8 * * *"]
+
+[vars]
+# 🔧 PLACEHOLDER: Replace with your website URL(s)
+ALLOWED_ORIGIN = "https://🔧 yoursite.com"
+ALLOWED_ORIGIN_WWW = "https://www.🔧 yoursite.com"
+# ALLOWED_ORIGIN_DEV = "https://🔧 your-dev.pages.dev"  # optional
+SESSION_SECRET = "🔧 generate-a-random-secret-string-here"
+
+# Email (optional — for contact form forwarding)
+# [send_email]
+# name = "Contact Form"
